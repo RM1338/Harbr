@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "530603219844",
+    "firebase_url": "https://harbr-3cd5c-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "harbr-3cd5c",
+    "storage_bucket": "harbr-3cd5c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:530603219844:android:712c94491b832702c4dbd1",
+        "android_client_info": {
+          "package_name": "com.harbr.harbr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-IJHbhjOlENdbP9viDxEumIgjJMtJJTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:530603219844:android:74216e27ee8cab2ac4dbd1",
+        "android_client_info": {
+          "package_name": "com.harbro.harbr"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC-IJHbhjOlENdbP9viDxEumIgjJMtJJTM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
