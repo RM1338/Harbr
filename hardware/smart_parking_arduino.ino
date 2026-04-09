@@ -21,7 +21,7 @@ const int   mqttPort   = 1883;
 #define LED_SLOT1    11   // Slot 1 LED (220Ω resistor in series)
 #define BUZZER_PIN   8    // Buzzer
 
-// ── Thresholds ───────────────────────────────────────────────────
+// ── Thresholds ───────────────────────────────────────────────────3cd5c
 #define OCCUPIED_CM  50   // Distance below this = car present
 #define GATE_OPEN    90   // Servo angle for open gate
 #define GATE_CLOSED  0    // Servo angle for closed gate
