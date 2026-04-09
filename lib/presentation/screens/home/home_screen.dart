@@ -50,7 +50,7 @@ class HomeScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                'Harbour Gateway · Terminal A',
+                FacilityInfo.fullName,
                 style: AppTextStyles.headlineMd,
               ),
             ),
@@ -58,7 +58,7 @@ class HomeScreen extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
-                'Mumbai, Maharashtra',
+                FacilityInfo.location,
                 style: AppTextStyles.bodySm,
               ),
             ),
@@ -228,9 +228,10 @@ class _StatsBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final total = slots?.length ?? 3;
+    final total     = slots?.length ?? kAllSlotIds.length;
     final available = slots?.where((s) => s.isAvailable).length ?? 0;
-    final reserved = slots?.where((s) => s.isReserved || s.isOccupied).length ?? 0;
+    final occupied  = slots?.where((s) => s.isOccupied).length ?? 0;
+    final reserved  = slots?.where((s) => s.isReserved).length ?? 0;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -242,15 +243,13 @@ class _StatsBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _StatItem(label: 'TOTAL', value: '$total', color: AppColors.onSurface),
+          _StatItem(label: 'TOTAL',     value: '$total',     color: AppColors.onSurface),
           _Divider(),
-          _StatItem(label: 'AVAILABLE', value: '$available', color: AppColors.slotAvailable),
+          _StatItem(label: 'FREE',      value: '$available', color: AppColors.slotAvailable),
           _Divider(),
-          _StatItem(
-            label: 'OCCUPIED',
-            value: '$reserved',
-            color: slots == null ? AppColors.onSurfaceDim : AppColors.slotOccupied,
-          ),
+          _StatItem(label: 'OCCUPIED',  value: '$occupied',  color: slots == null ? AppColors.onSurfaceDim : AppColors.slotOccupied),
+          _Divider(),
+          _StatItem(label: 'RESERVED',  value: '$reserved',  color: slots == null ? AppColors.onSurfaceDim : AppColors.warning),
         ],
       ),
     );

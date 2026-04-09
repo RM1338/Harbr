@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:firebase_database/firebase_database.dart';
 import '../../domain/entities/parking_slot.dart';
+import '../../domain/entities/violation.dart';
 import '../../core/constants/app_constants.dart';
 
 class FirebaseSlotDataSource {
@@ -26,6 +27,9 @@ class FirebaseSlotDataSource {
             status: slotData['status'] as String? ?? SlotStatus.available,
             reservedBy: slotData['reservedBy'] as String?,
             until: slotData['until'] as int?,
+            vehicleType: slotData['vehicleType'] as String?,
+            lastSensorReading: slotData['lastSensorReading'] as int?,
+            syncStatus: slotData['syncStatus'] as String?,
           ));
         } else {
           // Slot not yet in DB — treat as available
@@ -55,6 +59,27 @@ class FirebaseSlotDataSource {
       'reservedBy': reservedBy,
       'until': until,
     });
+  }
+
+  /// Streams violation events from /slots/{id}/violation for all slots.
+  /// Emits a [Violation] whenever any slot's violation sub-path is written.
+  Stream<Violation> watchViolations() {
+    final controller = StreamController<Violation>.broadcast();
+
+    for (final id in kAllSlotIds) {
+      _db.ref('slots/$id/violation').onValue.listen((event) {
+        final data = event.snapshot.value;
+        if (data == null) return;
+        final map = Map<String, dynamic>.from(data as Map);
+        final type = map['type'] as String?;
+        final timestamp = map['timestamp'] as int?;
+        if (type != null && timestamp != null) {
+          controller.add(Violation(slotId: id, type: type, timestamp: timestamp));
+        }
+      });
+    }
+
+    return controller.stream;
   }
 
   /// Returns a list of all 12 slots as "available" (offline fallback)

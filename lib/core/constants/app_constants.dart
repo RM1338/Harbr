@@ -49,7 +49,20 @@ class HarbrPricing {
   static const double ratePerHour = 20.0;
 }
 
-/// 3 parking slots IDs
+/// Facility / location constants — change these to match your deployment
+class FacilityInfo {
+  static const String name     = 'Harbour Gateway';
+  static const String terminal = 'Terminal A';
+  static const String city     = 'Mumbai';
+  static const String state    = 'Maharashtra';
+  static const String appVersion = '1.0.0';
+
+  static String get fullName    => '$name · $terminal';
+  static String get location    => '$city, $state';
+  static String get footerLabel => 'harbr v$appVersion · $name, $city';
+}
+
+/// 4 parking slot IDs — must match SLOT_ROIS keys in cv_pipeline/main.py
 const List<String> kAllSlotIds = [
-  'A1', 'A2', 'A3',
+  'A1', 'A2', 'A3', 'A4',
 ];

@@ -2,27 +2,38 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lucide_icons/lucide_icons.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/router/app_router.dart';
+import '../providers/app_providers.dart';
+import 'violation_banner.dart';
 
-/// Persistent shell scaffold with bottom navigation
-class ShellScaffold extends ConsumerWidget {
+/// Persistent shell scaffold with bottom navigation (5 items — no overflow)
+class ShellScaffold extends ConsumerStatefulWidget {
   final Widget child;
   const ShellScaffold({super.key, required this.child});
 
+  @override
+  ConsumerState<ShellScaffold> createState() => _ShellScaffoldState();
+}
+
+class _ShellScaffoldState extends ConsumerState<ShellScaffold> {
+  bool _isOffline = false;
+
+  // 5 tabs — fits any phone without overflow
   static const _tabs = [
     AppRoutes.home,
-    AppRoutes.reservation,
+    AppRoutes.map,
     AppRoutes.bookings,
-    AppRoutes.updates,
+    AppRoutes.gate,
     AppRoutes.profile,
   ];
 
-  static final _icons = [
+  static const _icons = [
     LucideIcons.layoutGrid,
-    LucideIcons.parkingSquare,
+    LucideIcons.map,
     LucideIcons.calendarDays,
-    LucideIcons.activity,
+    LucideIcons.doorOpen,
     LucideIcons.user,
   ];
 
@@ -33,12 +44,35 @@ class ShellScaffold extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
+    ref.listen<AsyncValue<List<ConnectivityResult>>>(connectivityProvider,
+        (_, next) {
+      final results = next.valueOrNull;
+      if (results == null) return;
+      final offline = results.every((r) => r == ConnectivityResult.none);
+      if (offline != _isOffline) {
+        setState(() => _isOffline = offline);
+      }
+    });
+
     final currentIndex = _currentIndex(context);
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: child,
+      body: Column(
+        children: [
+          if (_isOffline)
+            SafeArea(
+              bottom: false,
+              child: ViolationBanner(
+                message: 'No internet connection — data may be stale',
+                isCritical: false,
+                onDismiss: () => setState(() => _isOffline = false),
+              ),
+            ),
+          Expanded(child: widget.child),
+        ],
+      ),
       bottomNavigationBar: Container(
         height: 64,
         decoration: const BoxDecoration(
@@ -50,23 +84,23 @@ class ShellScaffold extends ConsumerWidget {
         child: SafeArea(
           top: false,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(_icons.length, (i) {
+            // Each tab gets an equal share of the available width — no overflow
+            children: List.generate(_tabs.length, (i) {
               final isActive = i == currentIndex;
-              return GestureDetector(
-                onTap: () => context.go(_tabs[i]),
-                behavior: HitTestBehavior.opaque,
-                child: SizedBox(
-                  width: 56,
-                  height: 56,
-                  child: Center(
-                    child: Icon(
-                      _icons[i],
-                      size: 20,
-                      color: isActive
-                          ? AppColors.navIconActive
-                          : AppColors.navIconInactive,
-                      // strokeWidth equivalent via OpticalSize — Lucide uses outline style
+              return Expanded(
+                child: GestureDetector(
+                  onTap: () => context.go(_tabs[i]),
+                  behavior: HitTestBehavior.opaque,
+                  child: SizedBox(
+                    height: 56,
+                    child: Center(
+                      child: Icon(
+                        _icons[i],
+                        size: 22,
+                        color: isActive
+                            ? AppColors.navIconActive
+                            : AppColors.navIconInactive,
+                      ),
                     ),
                   ),
                 ),

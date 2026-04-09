@@ -31,7 +31,7 @@ class SlotDetector:
         # One background subtractor per slot for independent learning
         self._subtractors: dict[str, cv2.BackgroundSubtractorMOG2] = {
             slot_id: cv2.createBackgroundSubtractorMOG2(
-                history=500, varThreshold=50, detectShadows=False
+                history=200, varThreshold=80, detectShadows=False
             )
             for slot_id in slot_rois
         }
@@ -42,7 +42,13 @@ class SlotDetector:
         }
 
         # Minimum foreground pixel ratio to consider a slot occupied
-        self._occupancy_threshold = 0.10
+        # Higher = less sensitive (fewer false positives)
+        self._occupancy_threshold = 0.25
+
+        # Warm-up: feed empty frames so MOG2 learns the background before
+        # reporting any slot as occupied
+        self._warmup_frames = 60   # ~2 seconds at 30fps
+        self._frame_count = 0
 
     def process_frame(self, frame: np.ndarray) -> dict[str, str]:
         """
@@ -64,6 +70,8 @@ class SlotDetector:
             return dict(self._last_state)
 
         result: dict[str, str] = {}
+        self._frame_count += 1
+        in_warmup = self._frame_count <= self._warmup_frames
 
         for slot_id, (x, y, w, h) in self.slot_rois.items():
             try:
@@ -74,6 +82,12 @@ class SlotDetector:
 
                 fg_mask = self._subtractors[slot_id].apply(roi)
                 fg_ratio = np.count_nonzero(fg_mask) / fg_mask.size
+
+                # During warm-up always report available so MOG2 can learn
+                if in_warmup:
+                    result[slot_id] = "available"
+                    self._last_state[slot_id] = "available"
+                    continue
 
                 status = "occupied" if fg_ratio >= self._occupancy_threshold else "available"
                 result[slot_id] = status

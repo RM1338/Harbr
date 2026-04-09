@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lucide_icons/lucide_icons.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../providers/app_providers.dart';
 import '../../widgets/error_banner.dart';
 import '../../../data/datasources/firebase_auth_datasource.dart';
@@ -230,7 +231,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const SizedBox(height: 16),
               Center(
                 child: Text(
-                  'harbr v1.0.0 · Harbour Gateway, Mumbai',
+                  'harbr v${FacilityInfo.appVersion} · ${FacilityInfo.name}, ${FacilityInfo.city}',
                   style: AppTextStyles.labelSm.copyWith(fontSize: 9),
                 ),
               ),

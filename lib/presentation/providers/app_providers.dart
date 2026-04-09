@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import '../../data/datasources/firebase_auth_datasource.dart';
 import '../../data/datasources/firebase_slot_datasource.dart';
 import '../../data/datasources/firebase_reservation_datasource.dart';
@@ -9,6 +10,7 @@ import '../../data/datasources/hive_cache_datasource.dart';
 import '../../domain/entities/parking_slot.dart';
 import '../../domain/entities/reservation.dart';
 import '../../domain/entities/parking_event.dart';
+import '../../domain/entities/violation.dart';
 
 // ── Data Sources ─────────────────────────────────────────────────────────────
 
@@ -81,6 +83,19 @@ final userReservationsProvider = StreamProvider<List<Reservation>>((ref) {
 final eventsStreamProvider = StreamProvider<List<ParkingEvent>>((ref) {
   final ds = ref.watch(firebaseEventDSProvider);
   return ds.watchEvents();
+});
+
+// ── Violations ────────────────────────────────────────────────────────────────
+
+final violationStreamProvider = StreamProvider<Violation>((ref) {
+  final ds = ref.watch(firebaseSlotDSProvider);
+  return ds.watchViolations();
+});
+
+// ── Connectivity ──────────────────────────────────────────────────────────────
+
+final connectivityProvider = StreamProvider<List<ConnectivityResult>>((ref) {
+  return Connectivity().onConnectivityChanged;
 });
 
 // ── Settings (Hive) ──────────────────────────────────────────────────────────

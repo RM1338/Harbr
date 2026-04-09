@@ -5,10 +5,13 @@ import '../../presentation/screens/onboarding_screen.dart';
 import '../../presentation/screens/auth/sign_in_screen.dart';
 import '../../presentation/screens/auth/sign_up_screen.dart';
 import '../../presentation/screens/home/home_screen.dart';
+import '../../presentation/screens/map/slot_map_screen.dart';
 import '../../presentation/screens/reservation/reservation_screen.dart';
 import '../../presentation/screens/bookings/my_bookings_screen.dart';
 import '../../presentation/screens/updates/live_updates_screen.dart';
 import '../../presentation/screens/profile/profile_screen.dart';
+import '../../presentation/screens/slot/slot_detail_screen.dart';
+import '../../presentation/screens/gate/gate_control_screen.dart';
 import '../../presentation/widgets/shell_scaffold.dart';
 
 // Route paths
@@ -17,10 +20,13 @@ class AppRoutes {
   static const signIn = '/sign-in';
   static const signUp = '/sign-up';
   static const home = '/home';
+  static const slot = '/slot';
   static const reservation = '/reservation';
+  static const map = '/map';
   static const bookings = '/bookings';
   static const updates = '/updates';
   static const profile = '/profile';
+  static const gate = '/gate';
 }
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -61,6 +67,17 @@ final routerProvider = Provider<GoRouter>((ref) {
             builder: (ctx, state) => const HomeScreen(),
           ),
           GoRoute(
+            path: AppRoutes.slot,
+            builder: (ctx, state) {
+              final slotId = state.uri.queryParameters['slotId'] ?? '';
+              return SlotDetailScreen(slotId: slotId);
+            },
+          ),
+          GoRoute(
+            path: AppRoutes.map,
+            builder: (ctx, state) => const SlotMapScreen(),
+          ),
+          GoRoute(
             path: AppRoutes.reservation,
             builder: (ctx, state) {
               final slotId = state.uri.queryParameters['slotId'];
@@ -78,6 +95,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.profile,
             builder: (ctx, state) => const ProfileScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.gate,
+            builder: (ctx, state) => const GateControlScreen(),
           ),
         ],
       ),

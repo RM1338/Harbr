@@ -5,6 +5,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/theme/app_text_styles.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../providers/app_providers.dart';
+import '../../widgets/booking_card.dart';
 import '../../widgets/error_banner.dart';
 import '../../../domain/entities/reservation.dart';
 import '../../../data/datasources/firebase_reservation_datasource.dart';
@@ -26,35 +27,22 @@ class MyBookingsScreen extends ConsumerWidget {
       ),
       body: reservationsAsync.when(
         data: (reservations) {
-          final active = reservations.where((r) => r.isActive).toList();
-          final past = reservations.where((r) => r.isPast).toList();
-
-          if (reservations.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.calendar_today_outlined,
-                      size: 48, color: AppColors.onSurfaceDim),
-                  const SizedBox(height: 16),
-                  Text('No bookings yet', style: AppTextStyles.bodyLg),
-                  const SizedBox(height: 8),
-                  Text('Reserve a parking slot to get started',
-                      style: AppTextStyles.bodySm),
-                ],
-              ),
-            );
-          }
+          final active = reservations.where((r) => r.isActive).firstOrNull;
+          final past = reservations.where((r) => r.isPast).toList()
+            ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
           return ListView(
             padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
             children: [
-              if (active.isNotEmpty) ...[
-                Text('ACTIVE', style: AppTextStyles.labelSm),
-                const SizedBox(height: 12),
-                ...active.map<Widget>((r) => _BookingRow(reservation: r, isActive: true, ref: ref)),
-                const SizedBox(height: 32),
-              ],
+              // Active booking section
+              Text('ACTIVE BOOKING', style: AppTextStyles.labelSm),
+              const SizedBox(height: 12),
+              if (active != null)
+                BookingCard(reservation: active)
+              else
+                _NoActiveBooking(),
+              const SizedBox(height: 32),
+              // Past bookings section
               if (past.isNotEmpty) ...[
                 Text('PAST', style: AppTextStyles.labelSm),
                 const SizedBox(height: 12),
@@ -65,6 +53,32 @@ class MyBookingsScreen extends ConsumerWidget {
         },
         loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
         error: (e, _) => const ErrorBanner(message: 'Failed to load bookings. Check connection.'),
+      ),
+    );
+  }
+}
+
+class _NoActiveBooking extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.local_parking_outlined,
+              size: 40, color: AppColors.onSurfaceDim),
+          const SizedBox(height: 12),
+          Text('No active booking', style: AppTextStyles.bodyLg),
+          const SizedBox(height: 4),
+          Text('Reserve a slot to see it here',
+              style: AppTextStyles.bodySm),
+        ],
       ),
     );
   }

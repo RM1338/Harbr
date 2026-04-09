@@ -50,15 +50,16 @@ CAMERA_INDEX    = int(os.getenv("CAMERA_INDEX", "0"))
 HSV_LOWER = np.array([35, 100, 100], dtype=np.uint8)
 HSV_UPPER = np.array([85, 255, 255], dtype=np.uint8)
 
-# Slot ROIs: slot_id → (x, y, w, h) — adjust to match camera mount
+# Slot ROIs: slot_id → (x, y, w, h) — defined using setup_rois.py
 SLOT_ROIS: dict[str, tuple] = {
-    "A1": (0,   0,   200, 150),
-    "A2": (200, 0,   200, 150),
-    "A3": (400, 0,   200, 150),
+    "A1": (517, 183, 114, 231),
+    "A2": (365, 191, 106, 231),
+    "A3": (213, 200, 111, 229),
+    "A4": (30,  192, 130, 229),
 }
 
 # EV-designated slots — ICE vehicles here trigger a violation
-EV_SLOTS: set[str] = {"A1", "A2"}
+EV_SLOTS: set[str] = {"A1", "A2", "A3", "A4"}
 # ─────────────────────────────────────────────────────────────────────────────
 
 
@@ -170,6 +171,58 @@ def _process_occupied_slot(
     return vehicle_type
 
 
+# Status colours for the preview window (BGR)
+_COLOUR_AVAILABLE = (0, 220, 80)
+_COLOUR_OCCUPIED  = (0, 60, 220)
+_COLOUR_RESERVED  = (0, 180, 255)
+_COLOUR_TEXT      = (255, 255, 255)
+_COLOURS_CYCLE    = [
+    (0, 220, 80),
+    (255, 120, 0),
+    (0, 200, 255),
+    (220, 0, 255),
+]
+
+
+def _draw_preview(frame: np.ndarray, slot_statuses: dict[str, str]) -> np.ndarray:
+    """Draw ROI boxes and status labels on a copy of the frame."""
+    display = frame.copy()
+
+    for i, (slot_id, (x, y, w, h)) in enumerate(SLOT_ROIS.items()):
+        status = slot_statuses.get(slot_id, "available")
+
+        if status == "occupied":
+            box_colour = _COLOUR_OCCUPIED
+        elif status == "reserved":
+            box_colour = _COLOUR_RESERVED
+        else:
+            # Use a unique colour per slot when available so they're easy to tell apart
+            box_colour = _COLOURS_CYCLE[i % len(_COLOURS_CYCLE)]
+
+        thickness = 3 if status == "occupied" else 2
+        cv2.rectangle(display, (x, y), (x + w, y + h), box_colour, thickness)
+
+        # Filled label background so text is readable even without fonts
+        label = f"{slot_id}: {status.upper()}"
+        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+        cv2.rectangle(display, (x, y), (x + tw + 10, y + th + 10), box_colour, -1)
+        cv2.putText(display, label, (x + 5, y + th + 4),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 2)
+
+    # Bottom status bar
+    bar_y = display.shape[0] - 30
+    cv2.rectangle(display, (0, bar_y), (display.shape[1], display.shape[0]),
+                  (30, 30, 30), -1)
+    summary = "  |  ".join(
+        f"{sid}: {'OCC' if st == 'occupied' else 'FREE'}"
+        for sid, st in slot_statuses.items()
+    )
+    cv2.putText(display, summary + "   Q=quit",
+                (8, display.shape[0] - 10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.45, (200, 200, 200), 1)
+    return display
+
+
 def _pipeline_loop(
     slot_detector: SlotDetector,
     vehicle_classifier: VehicleClassifier,
@@ -185,48 +238,84 @@ def _pipeline_loop(
         return
 
     logger.info("Camera opened (index=%d). Starting pipeline loop.", CAMERA_INDEX)
+    logger.info("Preview window open — press Q to quit.")
+
+    slot_statuses: dict[str, str] = {sid: "available" for sid in SLOT_ROIS}
+
+    # Create and initialise the window before the loop so Qt has time to render
+    cv2.namedWindow("Harbr — Parking CV Pipeline", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("Harbr — Parking CV Pipeline", 800, 500)
+
+    # Prime the window with a black frame so it appears immediately
+    ret, first_frame = cap.read()
+    if ret and first_frame is not None:
+        cv2.imshow("Harbr — Parking CV Pipeline", first_frame)
+        cv2.waitKey(1)
+
+    # Only run detection + Firebase writes every N frames to avoid lag.
+    # Display updates every frame so the preview stays smooth.
+    DETECT_EVERY_N_FRAMES = 10
+    frame_count = 0
+
+    # Firebase writes run in a daemon thread so they never block the display loop
+    _write_executor = threading.Thread(target=lambda: None, daemon=True)
+
+    def _async_write(fn, *args, **kwargs):
+        t = threading.Thread(target=fn, args=args, kwargs=kwargs, daemon=True)
+        t.start()
 
     try:
         while True:
             ret, frame = cap.read()
             if not ret or frame is None:
                 logger.warning("Camera read failed — skipping frame.")
-                time.sleep(0.1)
+                time.sleep(0.05)
                 continue
 
-            try:
-                slot_statuses = slot_detector.process_frame(frame)
-            except Exception as exc:  # noqa: BLE001
-                logger.error("SlotDetector error: %s — skipping frame.", exc)
-                time.sleep(0.1)
-                continue
+            frame_count += 1
 
-            for slot_id, status in slot_statuses.items():
+            # Run detection only every N frames
+            if frame_count % DETECT_EVERY_N_FRAMES == 0:
                 try:
-                    if status == "occupied":
-                        _process_occupied_slot(
-                            slot_id=slot_id,
-                            frame=frame,
-                            vehicle_classifier=vehicle_classifier,
-                            cable_detector=cable_detector,
-                            compliance_timer=compliance_timer,
-                            firebase_bridge=firebase_bridge,
-                            influx_logger=influx_logger,
-                            slot_rois=SLOT_ROIS,
-                        )
-                    else:
-                        # Slot is free or reserved — cancel any running timer
-                        compliance_timer.cancel(slot_id)
-                        firebase_bridge.write_slot_status(slot_id, status)
-                        influx_logger.log_slot_status(slot_id, status)
-
+                    slot_statuses = slot_detector.process_frame(frame)
                 except Exception as exc:  # noqa: BLE001
-                    logger.error("Error processing slot %s: %s", slot_id, exc)
+                    logger.error("SlotDetector error: %s", exc)
+
+                for slot_id, status in slot_statuses.items():
+                    try:
+                        if status == "occupied":
+                            _async_write(
+                                _process_occupied_slot,
+                                slot_id=slot_id,
+                                frame=frame.copy(),
+                                vehicle_classifier=vehicle_classifier,
+                                cable_detector=cable_detector,
+                                compliance_timer=compliance_timer,
+                                firebase_bridge=firebase_bridge,
+                                influx_logger=influx_logger,
+                                slot_rois=SLOT_ROIS,
+                            )
+                        else:
+                            compliance_timer.cancel(slot_id)
+                            _async_write(firebase_bridge.write_slot_status, slot_id, status)
+                            _async_write(influx_logger.log_slot_status, slot_id, status)
+                    except Exception as exc:  # noqa: BLE001
+                        logger.error("Error processing slot %s: %s", slot_id, exc)
+
+            # Always update the preview — smooth display regardless of detection rate
+            preview = _draw_preview(frame, slot_statuses)
+            cv2.imshow("Harbr — Parking CV Pipeline", preview)
+
+            # Q to quit
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                logger.info("Quit key pressed.")
+                break
 
     except KeyboardInterrupt:
         logger.info("Pipeline loop stopped by user.")
     finally:
         cap.release()
+        cv2.destroyAllWindows()
         logger.info("Camera released.")
 
 
