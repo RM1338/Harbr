@@ -1,45 +1,150 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.build/
-.buildlog/
-.history
-.svn/
-.swiftpm/
-migrate_working_dir/
+# =============================================================
+#  Harbr — Smart Parking System
+#  Flutter + Python CV Pipeline + Arduino
+# =============================================================
 
-# IntelliJ related
+
+# ── SECRETS & CREDENTIALS ────────────────────────────────────
+# Firebase service account key — NEVER commit this
+hardware/serviceAccountKey.json
+hardware/*.json
+**/serviceAccountKey*.json
+**/firebase-adminsdk*.json
+
+# Environment variable files
+.env
+.env.*
+hardware/.env
+hardware/.env.*
+
+
+# ── FLUTTER / DART ───────────────────────────────────────────
+# Dart tool cache
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+
+# Build output
+/build/
+**/doc/api/
+/coverage/
+
+# iOS build artifacts
+**/ios/Flutter/.last_build_id
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+
+# Android build artifacts
+/android/app/debug
+/android/app/profile
+/android/app/release
+/android/.gradle/
+/android/local.properties
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Obfuscation / symbolication
+app.*.symbols
+app.*.map.json
+
+
+# ── PYTHON ───────────────────────────────────────────────────
+# Byte-compiled / optimised
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Distribution / packaging
+.Python
+dist/
+build/
+*.egg-info/
+*.egg
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+.conda/
+
+# Testing & coverage
+.pytest_cache/
+.hypothesis/
+.coverage
+htmlcov/
+*.cover
+coverage.xml
+nosetests.xml
+pytest.ini
+
+# Type checking
+.mypy_cache/
+.dmypy.json
+.pytype/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Saved webcam test frames
+hardware/test_frame*.jpg
+hardware/test_frame*.png
+
+
+# ── ARDUINO / C++ ────────────────────────────────────────────
+# Arduino build cache
+hardware/.arduino*/
+hardware/build/
+*.elf
+*.hex
+*.bin
+
+
+# ── EDITORS & OS ─────────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.fuse_hidden*
+.Trash-*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# VS Code (keep launch.json and settings if you want, but ignore extensions)
+.vscode/extensions.json
+
+# IntelliJ / Android Studio
 *.iml
 *.ipr
 *.iws
 .idea/
+*.class
 
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
+# Vim / Emacs swap files
+*.swp
+*.swo
+.atom/
+.history/
+.svn/
+.swiftpm/
+migrate_working_dir/
 
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins-dependencies
-.pub-cache/
-.pub/
-/build/
-/coverage/
-
-# Symbolication related
-app.*.symbols
-
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Logs
+*.log
+logs/
